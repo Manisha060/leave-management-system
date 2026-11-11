@@ -22,7 +22,7 @@ import {
     MessageSquareText
 } from "lucide-react";
 
-const API = "http://localhost:5000/api";
+const API = "https://leave-management-system-kjch.onrender.com/api";
 
 const client = axios.create({
     baseURL: API
