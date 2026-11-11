@@ -18,6 +18,13 @@ app.use(cors({
 }));
 
 app.use(express.json());
+// Temporary API request logger
+app.use((req, res, next) => {
+    console.log("REQUEST RECEIVED:", req.method, req.url);
+    console.log("REQUEST ORIGIN:", req.headers.origin);
+
+    next();
+});
 
 app.get("/", (req, res) => {
     res.send("Leave Management System API Running");
