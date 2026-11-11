@@ -8,6 +8,22 @@ const authRoutes = require("./routes/auth.routes");
 const leaveRoutes = require("./routes/leave.routes");
 
 const app = express();
+// Request logger - keep this BEFORE CORS
+app.use((req, res, next) => {
+    console.log("REQUEST RECEIVED:", req.method, req.url);
+    console.log("REQUEST ORIGIN:", req.headers.origin);
+    next();
+});
+
+app.use(cors({
+    origin: [
+        process.env.CLIENT_URL,
+        "http://localhost:5173"
+    ],
+    credentials: true
+}));
+
+app.use(express.json());
 
 app.use(cors({
     origin: [
