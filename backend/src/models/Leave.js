@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 const leaveSchema = new mongoose.Schema({
@@ -12,6 +13,16 @@ const leaveSchema = new mongoose.Schema({
         type: String,
         enum: ["Casual", "Medical"],
         required: true
+    },
+
+    fromDate: {
+        type: String,
+        default: null
+    },
+
+    toDate: {
+        type: String,
+        default: null
     },
 
     days: {
