@@ -1,3 +1,4 @@
+
 const express = require("express");
 
 const Leave = require("../models/Leave");
@@ -12,20 +13,82 @@ const router = express.Router();
 
 router.use(protect);
 
+// Get current date in India (YYYY-MM-DD)
+const getTodayIndia = () => {
+    return new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).format(new Date());
+};
+
+// Validate YYYY-MM-DD and ensure it is a real calendar date
+const isValidDate = value => {
+    if (typeof value !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return false;
+    }
+
+    const [year, month, day] = value.split("-").map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    return (
+        date.getUTCFullYear() === year &&
+        date.getUTCMonth() === month - 1 &&
+        date.getUTCDate() === day
+    );
+};
+
+// Calculate inclusive leave days
+const calculateDays = (fromDate, toDate) => {
+    const start = new Date(`${fromDate}T00:00:00Z`);
+    const end = new Date(`${toDate}T00:00:00Z`);
+
+    return Math.floor((end - start) / 86400000) + 1;
+};
+
 // Employee: Apply Leave
 router.post("/", async (req, res) => {
     try {
-        const { leaveType, days, reason } = req.body;
+        const {
+            leaveType,
+            fromDate,
+            toDate,
+            reason
+        } = req.body;
 
-        const count = Number(days);
-
-        if (
-            !["Casual", "Medical"].includes(leaveType) ||
-            !Number.isInteger(count) ||
-            count < 1
-        ) {
+        if (!["Casual", "Medical"].includes(leaveType)) {
             return res.status(400).json({
-                message: "Invalid leave details"
+                message: "Invalid leave type"
+            });
+        }
+
+        if (!isValidDate(fromDate) || !isValidDate(toDate)) {
+            return res.status(400).json({
+                message: "Please enter valid leave dates"
+            });
+        }
+
+        const today = getTodayIndia();
+
+        if (fromDate < today || toDate < today) {
+            return res.status(400).json({
+                message: "Past dates are not allowed. Please select today or a future date."
+            });
+        }
+
+        if (toDate < fromDate) {
+            return res.status(400).json({
+                message: "To Date cannot be earlier than From Date"
+            });
+        }
+
+        const count = calculateDays(fromDate, toDate);
+
+        if (!Number.isInteger(count) || count < 1) {
+            return res.status(400).json({
+                message: "Invalid leave date range"
             });
         }
 
@@ -60,6 +123,8 @@ router.post("/", async (req, res) => {
         const leave = await Leave.create({
             employee: req.user._id,
             leaveType,
+            fromDate,
+            toDate,
             days: count,
             reason: String(reason || "").trim(),
             status: "Pending"
